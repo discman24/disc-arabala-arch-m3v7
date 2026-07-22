@@ -1,0 +1,486 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Arabala Infrastructure — Architecture</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#0A1628;
+    --panel:#0f2038;
+    --panel-2:#122748;
+    --gold:#C9A84C;
+    --gold-2:#e6c877;
+    --gold-line:rgba(201,168,76,.55);
+    --gold-soft:rgba(201,168,76,.10);
+    --steel-1:#26374f;
+    --steel-2:#1e2d44;
+    --red:#e04c3b;
+    --red-bg:rgba(224,76,59,.14);
+    --red-line:rgba(224,76,59,.65);
+    --amber:#e0a020;
+    --fg:#ffffff;
+    --fg-dim:#c6cfdd;
+    --fg-mute:#8b98ae;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;padding:0;background:var(--bg);color:var(--fg);font-family:'Inter',system-ui,sans-serif;-webkit-font-smoothing:antialiased}
+  body{
+    background:
+      radial-gradient(1200px 500px at 50% -100px, rgba(201,168,76,.06), transparent 60%),
+      radial-gradient(900px 500px at 100% 100%, rgba(224,76,59,.05), transparent 60%),
+      var(--bg);
+    min-height:100vh;
+    padding:20px 22px 28px;
+  }
+  .board{
+    max-width:1440px;
+    margin:0 auto;
+    display:flex;
+    flex-direction:column;
+    gap:8px;
+  }
+  .head{
+    display:flex;align-items:center;justify-content:space-between;gap:12px;
+    padding:2px 4px 6px;
+  }
+  .head h1{
+    margin:0;
+    color:var(--gold);
+    font-size:22px;
+    font-weight:800;
+    letter-spacing:.22em;
+    text-transform:uppercase;
+  }
+  .head .meta{
+    color:var(--fg-mute);
+    font-size:10px;letter-spacing:.28em;text-transform:uppercase;font-weight:600;
+  }
+
+  /* LAYER SHELL */
+  .layer{position:relative;display:flex;flex-direction:column;gap:6px}
+  .l-head{
+    display:flex;align-items:center;gap:10px;
+    color:var(--fg-mute);
+    font-size:10px;letter-spacing:.28em;text-transform:uppercase;font-weight:700;
+  }
+  .l-head .n{
+    display:inline-flex;align-items:center;justify-content:center;
+    width:18px;height:18px;border-radius:50%;
+    background:var(--gold);color:#0A1628;font-size:10px;font-weight:800;letter-spacing:0;
+  }
+  .l-head .name{color:var(--gold-2)}
+  .l-head .rule{flex:1;height:1px;background:linear-gradient(90deg,var(--gold-line),transparent)}
+
+  .grid-1{display:grid;grid-template-columns:1fr;gap:10px}
+  .grid-2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+  .grid-3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px}
+
+  .box{
+    background:var(--panel);
+    border:1px solid var(--gold-line);
+    border-radius:10px;
+    padding:12px 14px;
+    position:relative;
+    box-shadow:0 4px 12px rgba(0,0,0,.25), inset 0 1px 0 rgba(255,255,255,.02);
+    display:flex;flex-direction:column;gap:6px;
+  }
+  .box.filled{
+    background:linear-gradient(180deg, rgba(201,168,76,.18), rgba(201,168,76,.05));
+    border-color:var(--gold);
+  }
+  .box.dashed{border-style:dashed;background:linear-gradient(180deg, rgba(201,168,76,.06), rgba(201,168,76,.02))}
+  .box.steel{background:linear-gradient(180deg,var(--steel-1),var(--steel-2));border-color:rgba(201,168,76,.4)}
+  .box.red{background:linear-gradient(180deg, rgba(192,57,43,.22), rgba(192,57,43,.08));border-color:var(--red-line)}
+  .box .h{
+    display:flex;align-items:center;gap:10px;
+    color:var(--gold);
+    font-weight:800;
+    letter-spacing:.12em;
+    text-transform:uppercase;
+    font-size:12.5px;
+  }
+  .box .h .icon{
+    width:28px;height:28px;border-radius:7px;
+    display:flex;align-items:center;justify-content:center;
+    background:linear-gradient(180deg,var(--gold),#8f7a37);
+    color:#0A1628;font-weight:800;font-size:13px;flex:0 0 auto;
+  }
+  .box .h .spacer{flex:1}
+  .box .row{display:flex;flex-wrap:wrap;gap:6px}
+  .kv{
+    display:flex;align-items:center;gap:6px;
+    padding:4px 8px;border-radius:6px;
+    background:rgba(10,22,40,.5);
+    border:1px solid rgba(201,168,76,.3);
+    font-size:11px;letter-spacing:.06em;
+  }
+  .kv .k{color:var(--gold);font-weight:700;letter-spacing:.1em;text-transform:uppercase;font-size:10.5px}
+  .kv .v{color:var(--fg-dim)}
+
+  .chip{
+    display:inline-flex;align-items:center;gap:6px;
+    padding:3px 9px;border-radius:999px;
+    font-size:10px;letter-spacing:.16em;text-transform:uppercase;font-weight:700;
+    border:1px solid var(--gold-line);color:var(--gold-2);background:var(--gold-soft);
+    white-space:nowrap;
+  }
+  .chip.red{color:#ffd8d1;border-color:var(--red-line);background:var(--red-bg)}
+  .chip.amber{color:#ffe1a8;border-color:rgba(224,160,32,.6);background:rgba(224,160,32,.12)}
+  .chip.dim{color:var(--fg-mute);border-color:rgba(255,255,255,.08);background:rgba(255,255,255,.03)}
+
+  /* Leadership row layout */
+  .leaders{
+    display:flex;align-items:stretch;justify-content:center;gap:0;flex:1;
+  }
+  .person{
+    display:flex;align-items:center;gap:10px;
+    padding:8px 16px;border-radius:10px;
+    background:rgba(10,22,40,.55);
+    border:1px solid var(--gold-line);
+    min-width:210px;
+    justify-content:center;
+  }
+  .avatar{
+    width:36px;height:36px;border-radius:50%;
+    display:flex;align-items:center;justify-content:center;
+    background:linear-gradient(180deg,var(--gold),#8f7a37);
+    color:#0A1628;font-weight:800;font-size:14px;
+  }
+  .p-name{color:var(--gold);font-weight:800;letter-spacing:.12em;font-size:14px}
+  .p-role{color:var(--fg-dim);font-size:10px;letter-spacing:.18em;text-transform:uppercase;font-weight:600}
+  .link-h{
+    align-self:center;
+    width:60px;height:2px;margin:0 8px;
+    background:repeating-linear-gradient(90deg,var(--gold-line) 0 8px, transparent 8px 14px);
+    position:relative;
+  }
+  .link-h::after{
+    content:"";position:absolute;right:-1px;top:50%;transform:translateY(-50%);
+    width:0;height:0;border-top:5px solid transparent;border-bottom:5px solid transparent;border-left:7px solid var(--gold);
+  }
+  .link-h::before{
+    content:"";position:absolute;left:-1px;top:50%;transform:translateY(-50%);
+    width:0;height:0;border-top:5px solid transparent;border-bottom:5px solid transparent;border-right:7px solid var(--gold);
+  }
+
+  /* Connector between layers */
+  .conn{
+    position:relative;height:22px;
+    display:flex;justify-content:center;align-items:center;
+  }
+  .conn.wide::before{
+    content:"";position:absolute;left:12%;right:12%;top:calc(50% - 1px);height:2px;
+    background:repeating-linear-gradient(90deg,var(--gold-line) 0 10px, transparent 10px 16px);
+  }
+  .conn .v{
+    width:2px;height:20px;
+    background:repeating-linear-gradient(180deg,var(--gold-line) 0 6px, transparent 6px 10px);
+    position:relative;
+  }
+  .conn .v.arrow-down::after{
+    content:"";position:absolute;bottom:-1px;left:50%;transform:translateX(-50%);
+    width:0;height:0;border-left:6px solid transparent;border-right:6px solid transparent;border-top:8px solid var(--gold);
+  }
+  .conn .v.arrow-up::after{
+    content:"";position:absolute;top:-1px;left:50%;transform:translateX(-50%);
+    width:0;height:0;border-left:6px solid transparent;border-right:6px solid transparent;border-bottom:8px solid var(--gold);
+  }
+  .conn .lbl{
+    position:absolute;left:52%;top:50%;transform:translateY(-50%);
+    color:var(--gold-2);font-size:9.5px;letter-spacing:.24em;text-transform:uppercase;font-weight:700;
+    padding:2px 8px;border-radius:999px;background:var(--bg);border:1px solid var(--gold-line);
+    white-space:nowrap;
+  }
+
+  /* Pillar body */
+  .pillar-body{display:flex;flex-wrap:wrap;gap:6px;margin-top:2px}
+  .pillar-body .kv{background:rgba(10,22,40,.4)}
+
+  /* Spine specific */
+  .spine{
+    display:flex;align-items:center;gap:14px;padding:12px 16px;
+  }
+  .spine .rail{
+    flex:1;height:2px;
+    background:repeating-linear-gradient(90deg,var(--gold-line) 0 10px, transparent 10px 18px);
+  }
+  .spine .dot{
+    width:12px;height:12px;border-radius:50%;background:var(--gold);
+    box-shadow:0 0 0 4px rgba(201,168,76,.18);flex:0 0 auto;
+  }
+  .spine .label{
+    color:var(--gold);font-weight:800;letter-spacing:.12em;text-transform:uppercase;font-size:13px;white-space:nowrap;
+  }
+  .spine .sub{color:var(--fg-dim);font-size:11px;letter-spacing:.06em;text-transform:none;font-weight:500;white-space:nowrap}
+
+  /* Regions */
+  .region{
+    display:flex;align-items:center;gap:8px;
+    padding:5px 10px;border-radius:8px;
+    background:rgba(10,22,40,.5);
+    border:1px solid rgba(201,168,76,.35);
+  }
+  .region .code{color:var(--gold);font-weight:800;letter-spacing:.08em;font-size:12px}
+  .region .loc{color:var(--fg-mute);font-size:9.5px;letter-spacing:.18em;text-transform:uppercase;font-weight:600}
+
+  /* Model rows */
+  .model-row{
+    display:flex;align-items:center;gap:8px;font-size:11.5px;letter-spacing:.05em;
+  }
+  .model-row .l{color:var(--gold);font-weight:800;letter-spacing:.1em;text-transform:uppercase;font-size:11px}
+  .model-row .arrow{color:var(--gold);font-weight:800}
+  .model-row .r{color:var(--fg-dim);font-size:11px;letter-spacing:.06em;text-transform:uppercase;font-weight:600}
+
+  /* Client layer */
+  .client-band{
+    display:flex;align-items:center;justify-content:center;gap:22px;flex-wrap:wrap;
+    padding:4px 0;
+  }
+  .client-band .item{
+    display:flex;align-items:center;gap:10px;
+    color:var(--gold-2);font-weight:800;letter-spacing:.14em;text-transform:uppercase;font-size:12.5px;
+  }
+  .client-band .item .icon{
+    width:26px;height:26px;border-radius:7px;
+    display:flex;align-items:center;justify-content:center;
+    background:linear-gradient(180deg,var(--gold),#8f7a37);color:#0A1628;font-weight:800;font-size:12px;
+  }
+  .client-band .sep{color:var(--fg-mute)}
+
+  /* Critical bottom */
+  .critical{
+    display:flex;align-items:center;gap:16px;flex-wrap:wrap;
+    padding:14px 18px;
+  }
+  .critical .siren{font-size:26px;line-height:1}
+  .critical .title{color:#ffd8d1;font-weight:800;letter-spacing:.18em;text-transform:uppercase;font-size:12.5px}
+  .critical .msg{color:#fff;font-weight:600;font-size:13px;margin-top:2px;letter-spacing:.02em}
+  .critical .msg em{color:#ffd8d1;font-style:normal;font-weight:800}
+  .critical .body{flex:1 1 320px;min-width:0}
+  .critical .tag{color:#ffd8d1;border:1px solid var(--red-line);background:rgba(224,76,59,.14);padding:6px 10px;border-radius:999px;font-size:10px;letter-spacing:.22em;text-transform:uppercase;font-weight:800}
+
+  /* legend */
+  footer.legend{
+    margin-top:6px;
+    display:flex;flex-wrap:wrap;gap:14px;justify-content:space-between;align-items:center;
+    color:var(--fg-mute);font-size:10px;letter-spacing:.18em;text-transform:uppercase;
+  }
+  footer.legend .keys{display:flex;flex-wrap:wrap;gap:12px}
+  footer.legend .k{display:flex;align-items:center;gap:6px}
+  footer.legend .sw{width:14px;height:10px;border-radius:2px;border:1px solid var(--gold-line)}
+  footer.legend .sw.gold{background:var(--gold)}
+  footer.legend .sw.navy{background:var(--panel)}
+  footer.legend .sw.dashed{background:transparent;border-style:dashed;border-color:var(--gold)}
+  footer.legend .sw.red{background:rgba(224,76,59,.5);border-color:var(--red-line)}
+
+  @media (max-width:900px){
+    .grid-2,.grid-3{grid-template-columns:1fr}
+    .leaders{flex-direction:column;align-items:center}
+    .link-h{width:2px;height:24px;background:repeating-linear-gradient(180deg,var(--gold-line) 0 6px, transparent 6px 10px);margin:6px 0}
+    .link-h::before,.link-h::after{display:none}
+  }
+</style>
+</head>
+<body>
+<main class="board" aria-label="Arabala Infrastructure Architecture">
+
+  <div class="head">
+    <h1>Arabala · Infrastructure</h1>
+    <div class="meta">Architecture · v1 · Board Review</div>
+  </div>
+
+  <!-- 1 LEADERSHIP -->
+  <section class="layer">
+    <div class="l-head"><span class="n">1</span><span class="name">Leadership</span><span class="rule"></span></div>
+    <div class="box filled">
+      <div class="leaders">
+        <div class="person">
+          <div class="avatar">H</div>
+          <div><div class="p-name">HAN</div><div class="p-role">Chief Executive</div></div>
+        </div>
+        <div class="link-h" aria-hidden="true"></div>
+        <div class="person">
+          <div class="avatar">G</div>
+          <div><div class="p-name">GHO5T</div><div class="p-role">Advisor · AI</div></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <div class="conn"><span class="v arrow-down" aria-hidden="true"></span><span class="lbl">Direction</span></div>
+
+  <!-- 2 PILLARS -->
+  <section class="layer">
+    <div class="l-head"><span class="n">2</span><span class="name">Two Pillars</span><span class="rule"></span></div>
+    <div class="grid-2">
+      <div class="box">
+        <div class="h"><span class="icon">S</span> Sales Pillar <span class="spacer"></span><span class="chip">Horizontal Growth</span></div>
+        <div class="pillar-body">
+          <span class="kv"><span class="k">Find</span><span class="v">Clients</span></span>
+          <span class="kv"><span class="k">Filter</span><span class="v">Quality Signal</span></span>
+          <span class="kv"><span class="k">Own</span><span class="v">Pipeline · Close</span></span>
+        </div>
+      </div>
+      <div class="box">
+        <div class="h"><span class="icon">D</span> Delivery Pillar <span class="spacer"></span><span class="chip">Vertical Growth</span></div>
+        <div class="pillar-body">
+          <span class="kv"><span class="k">Deploy</span><span class="v">Production</span></span>
+          <span class="kv"><span class="k">Integrate</span><span class="v">Client Env</span></span>
+          <span class="kv"><span class="k">Stay</span><span class="v">Until It Works</span></span>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <div class="conn wide"><span class="lbl">Deployments · Telemetry ↑</span></div>
+
+  <!-- 3 INTELLIGENCE -->
+  <section class="layer">
+    <div class="l-head"><span class="n">3</span><span class="name">Intelligence Layer</span><span class="rule"></span></div>
+    <div class="box dashed">
+      <div class="h">
+        <span class="icon">i</span> Intelligence Layer
+        <span class="chip dim">Feeds From Delivery Data</span>
+        <span class="spacer"></span>
+        <span class="chip red">⚠️ No Owner Assigned</span>
+      </div>
+      <div class="row">
+        <span class="kv"><span class="k">In</span><span class="v">Deployment Signal</span></span>
+        <span class="kv"><span class="k">In</span><span class="v">Client Outcomes</span></span>
+        <span class="kv"><span class="k">Out</span><span class="v">Patterns → Leadership</span></span>
+        <span class="kv"><span class="k">Out</span><span class="v">Feedback → Models</span></span>
+      </div>
+    </div>
+  </section>
+
+  <div class="conn"><span class="v arrow-down" aria-hidden="true"></span></div>
+
+  <!-- 4 SPINE -->
+  <section class="layer">
+    <div class="l-head"><span class="n">4</span><span class="name">Shared Infrastructure Spine</span><span class="rule"></span></div>
+    <div class="box steel spine">
+      <span class="dot" aria-hidden="true"></span>
+      <span class="label">Eric · Interim CTO</span>
+      <span class="rail" aria-hidden="true"></span>
+      <span class="chip amber">Human CTO Hire In Progress</span>
+      <span class="rail" aria-hidden="true"></span>
+      <span class="sub">Identity · Deploy · Observability</span>
+    </div>
+  </section>
+
+  <div class="conn"><span class="v arrow-down" aria-hidden="true"></span><span class="lbl">Nervous System · Vertical</span></div>
+
+  <!-- 5 AGENTS -->
+  <section class="layer">
+    <div class="l-head"><span class="n">5</span><span class="name">AI Agent Nervous System</span><span class="rule"></span></div>
+    <div class="grid-3">
+      <div class="box">
+        <div class="h"><span class="icon">K</span> Keifer <span class="spacer"></span><span class="chip dim">Capability</span></div>
+        <div class="row">
+          <span class="kv"><span class="k">Build</span><span class="v">AI Capability</span></span>
+          <span class="kv"><span class="k">Maintain</span><span class="v">Runtime · Tools</span></span>
+        </div>
+      </div>
+      <div class="box">
+        <div class="h"><span class="icon">I</span> Isaac <span class="spacer"></span><span class="chip dim">Operations</span></div>
+        <div class="row">
+          <span class="kv"><span class="k">Ops</span><span class="v">Jobs · Monitoring</span></span>
+          <span class="kv"><span class="k">Reports</span><span class="v">Through Eric</span></span>
+        </div>
+      </div>
+      <div class="box">
+        <div class="h"><span class="icon">G</span> Gho5t <span class="spacer"></span><span class="chip dim">Advisory</span></div>
+        <div class="row">
+          <span class="kv"><span class="k">Role</span><span class="v">CEO Advisor</span></span>
+          <span class="kv"><span class="k">Scope</span><span class="v">Cross-Org</span></span>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <div class="conn"><span class="v arrow-down" aria-hidden="true"></span><span class="lbl">Compute</span></div>
+
+  <!-- 6 CLOUD -->
+  <section class="layer">
+    <div class="l-head"><span class="n">6</span><span class="name">Cloud Infrastructure</span><span class="rule"></span></div>
+    <div class="grid-2">
+      <div class="box">
+        <div class="h"><span class="icon">☁</span> Amsterdam <span class="spacer"></span><span class="chip">EU · Primary</span></div>
+        <div class="row">
+          <div class="region"><span class="code">D1</span><span class="loc">Amsterdam</span></div>
+          <div class="region"><span class="code">D2</span><span class="loc">Amsterdam</span></div>
+          <div class="region"><span class="code">D4</span><span class="loc">Amsterdam</span></div>
+        </div>
+      </div>
+      <div class="box">
+        <div class="h"><span class="icon">☁</span> AWS SEA <span class="spacer"></span><span class="chip">APAC · EC2</span></div>
+        <div class="row">
+          <div class="region"><span class="code">AWS</span><span class="loc">SEA · EC2</span></div>
+          <span class="chip red">⛔ No US Region</span>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <div class="conn"><span class="v arrow-down" aria-hidden="true"></span><span class="lbl">Models</span></div>
+
+  <!-- 7 MODEL -->
+  <section class="layer">
+    <div class="l-head"><span class="n">7</span><span class="name">Model Layer</span><span class="rule"></span></div>
+    <div class="grid-2">
+      <div class="box">
+        <div class="h"><span class="icon">▲</span> Frontier Models <span class="spacer"></span><span class="chip">Reasoning</span></div>
+        <div class="model-row"><span class="l">Frontier</span><span class="arrow">→</span><span class="r">Complex Reasoning · High-Stakes</span></div>
+      </div>
+      <div class="box">
+        <div class="h"><span class="icon">◆</span> Open Models <span class="spacer"></span><span class="chip red">⚠️ Routing Logic Not Documented</span></div>
+        <div class="model-row"><span class="l">Cheap Open</span><span class="arrow">→</span><span class="r">Digest · Extract · Classify</span></div>
+      </div>
+    </div>
+  </section>
+
+  <div class="conn"><span class="v arrow-down" aria-hidden="true"></span><span class="lbl">Delivery Surface</span></div>
+
+  <!-- 8 CLIENT -->
+  <section class="layer">
+    <div class="l-head"><span class="n">8</span><span class="name">Client Layer</span><span class="rule"></span></div>
+    <div class="box filled">
+      <div class="client-band">
+        <div class="item"><span class="icon">A</span> Arabala-Hosted Delivery</div>
+        <span class="sep">·</span>
+        <div class="item"><span class="icon">↔</span> Outside-In by Default</div>
+        <span class="sep">·</span>
+        <div class="item"><span class="icon">▮</span> Minimal Client-Firewall Footprint</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- CRITICAL -->
+  <section class="layer">
+    <div class="box red critical" role="alert">
+      <div class="siren" aria-hidden="true">⚠️</div>
+      <div class="body">
+        <div class="title">Critical Gap · Singapore Data Residency</div>
+        <div class="msg">Production in <em>Amsterdam</em>. Regulated <em>SG</em> clients require <em>SG-region</em>. <em>Regulatory wall.</em></div>
+      </div>
+      <div class="tag">Blocker · Regulated Segment</div>
+    </div>
+  </section>
+
+  <footer class="legend">
+    <div class="keys">
+      <div class="k"><span class="sw gold"></span> Leadership / Owned</div>
+      <div class="k"><span class="sw navy"></span> Component</div>
+      <div class="k"><span class="sw dashed"></span> Unowned / Gap</div>
+      <div class="k"><span class="sw red"></span> Critical Risk</div>
+    </div>
+    <div>Arabala · 2026 · Architecture Map</div>
+  </footer>
+
+</main>
+</body>
+</html>
